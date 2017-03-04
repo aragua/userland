@@ -8,6 +8,10 @@ fi
 
 BUILDSUBDIR=`echo $BUILDTYPE | tr '[A-Z]' '[a-z]'`;
 
+if [ -n "$BUILD_WAYLAND" ]; then
+       WAYLAND_VARS="-DBUILD_WAYLAND=TRUE"
+fi
+
 if [ "armv6l" = `arch` ] || [ "armv7l" = `arch` ]; then
 	# Native compile on the Raspberry Pi
 	mkdir -p build/raspberry/$BUILDSUBDIR
@@ -32,9 +36,13 @@ elif [ "$1" = "--native" ]; then
 	make -j 6 $*
 else
 	# Cross compile on a more capable machine
+	if [ -n "$BUILD_WAYLAND" ]; then
+		# Use wayland-scanner from the build platform
+		WAYLAND_VARS+=" -DWAYLAND_SCANNER_EXECUTABLE:FILEPATH=/usr/bin/wayland-scanner"
+	fi
 	mkdir -p build/arm-linux/$BUILDSUBDIR
 	pushd build/arm-linux/$BUILDSUBDIR
-	cmake -DCMAKE_TOOLCHAIN_FILE=../../../makefiles/cmake/toolchains/arm-linux-gnueabihf.cmake -DCMAKE_BUILD_TYPE=$BUILDTYPE ../../..
+	cmake -DCMAKE_TOOLCHAIN_FILE=../../../makefiles/cmake/toolchains/arm-linux-gnueabihf.cmake -DCMAKE_BUILD_TYPE=$BUILDTYPE $WAYLAND_VARS ../../..
 	make -j 6
 
 	if [ "$1" != "" ]; then
